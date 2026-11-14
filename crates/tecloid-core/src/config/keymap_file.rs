@@ -346,11 +346,25 @@ struct HoldDoc {
     )]
     #[cfg_attr(test, schemars(with = "u64"))]
     timeout_ms: Option<u64>,
+    /// Layer holds only: released within this many milliseconds without any
+    /// other input, the hold still fires the tap. Missing: twice the hold
+    /// timeout; 0: off.
+    #[cfg_attr(test, schemars(range(min = super::timing::RETRO_TAP.min, max = super::timing::RETRO_TAP.max)))]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "schema::non_null"
+    )]
+    #[cfg_attr(test, schemars(with = "u64"))]
+    retro_tap_ms: Option<u64>,
 }
 
 impl HoldDoc {
     fn is_empty(&self) -> bool {
-        self.layer.is_none() && self.action.is_none() && self.timeout_ms.is_none()
+        self.layer.is_none()
+            && self.action.is_none()
+            && self.timeout_ms.is_none()
+            && self.retro_tap_ms.is_none()
     }
 }
 
@@ -647,6 +661,7 @@ fn from_doc(mut doc: KeymapDoc) -> Result<KeymapPreset, String> {
             hold_action: three_state(hold.action, &what("hold action"))?,
             double_tap_action,
             hold_timeout_ms: hold.timeout_ms,
+            retro_tap_ms: hold.retro_tap_ms,
             tap_decision: rule.tap_decision,
             double_tap_timeout_ms,
         });
@@ -835,6 +850,7 @@ fn to_doc(preset: &KeymapPreset) -> KeymapDoc {
                         .flatten(),
                     action: three_state(&rule.hold_action),
                     timeout_ms: rule.hold_timeout_ms,
+                    retro_tap_ms: rule.retro_tap_ms,
                 }
             };
             RuleDoc {

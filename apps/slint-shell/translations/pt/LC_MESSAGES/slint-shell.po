@@ -3787,3 +3787,18 @@ msgstr "Mostrar um aviso quando o Tecloid enviar um comando de cópia"
 
 msgid "Copied"
 msgstr "Copiado"
+
+msgid "Enter a late tap from 0 to 5000 ms."
+msgstr "Introduza um toque tardio de 0 a 5000 ms."
+
+msgid "Late tap, ms"
+msgstr "Toque tardio, ms"
+
+msgid "Holding activates the layer as usual. Released within this time with nothing pressed, clicked or scrolled meanwhile, the trigger still runs its tap. 0 turns it off. Empty uses twice the hold threshold: {} ms."
+msgstr "Manter premido ativa a camada como habitualmente. Se for largado dentro deste tempo sem premir, clicar ou deslocar nada, o acionador executa na mesma o toque. 0 desativa. Vazio usa o dobro do limiar de manter premido: {} ms."
+
+msgid "Used for single-key triggers that activate a layer."
+msgstr "Usado em acionadores de uma tecla que ativam uma camada."
+
+msgid "Use twice the hold threshold: {} ms"
+msgstr "Usar o dobro do limiar de manter premido: {} ms"

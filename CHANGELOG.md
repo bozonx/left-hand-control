@@ -8,6 +8,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Added
 
+- Mapper: late tap for layer keys. A layer trigger held a little past its hold threshold and released without pressing, clicking or scrolling anything still runs its tap (e.g. CapsLock pastes instead of silently opening and closing its layer). The window defaults to twice the hold threshold; set it or turn it off (`0`) per rule in the advanced options or as `hold.retroTapMs` in the keymap file.
 - Rule triggers accept side-neutral Shift, Ctrl, Alt and Meta; physical triggers take priority.
 - Optional Linux on-screen acknowledgement when Tecloid sends a copy shortcut.
 

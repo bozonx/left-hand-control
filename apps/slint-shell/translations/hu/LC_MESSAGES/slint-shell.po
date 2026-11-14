@@ -3810,3 +3810,18 @@ msgstr "Jelzés megjelenítése, amikor a Tecloid másolási parancsot küld"
 
 msgid "Copied"
 msgstr "Másolva"
+
+msgid "Enter a late tap from 0 to 5000 ms."
+msgstr "Adjon meg egy késői koppintást 0 és 5000 ms között."
+
+msgid "Late tap, ms"
+msgstr "Késői koppintás, ms"
+
+msgid "Holding activates the layer as usual. Released within this time with nothing pressed, clicked or scrolled meanwhile, the trigger still runs its tap. 0 turns it off. Empty uses twice the hold threshold: {} ms."
+msgstr "A nyomva tartás a szokásos módon bekapcsolja a réteget. Ha ezen az időn belül engedi fel, és közben semmit nem nyomott meg, nem kattintott és nem görgetett, az indító mégis végrehajtja a koppintást. 0 kikapcsolja. Üresen a nyomva tartási küszöb kétszerese: {} ms."
+
+msgid "Used for single-key triggers that activate a layer."
+msgstr "Réteget bekapcsoló egybillentyűs indítókhoz."
+
+msgid "Use twice the hold threshold: {} ms"
+msgstr "A nyomva tartási küszöb kétszeresének használata: {} ms"

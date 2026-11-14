@@ -59,6 +59,9 @@ pub(super) struct RuleEntry {
     pub(super) long_hold_timeout: Duration,
     pub(super) double_tap: Option<CompiledAction>,
     pub(super) hold_timeout: Duration,
+    /// Layer hold released within this time of the press, with no other
+    /// input meanwhile, still fires the tap.
+    pub(super) retro_tap: Option<Duration>,
     pub(super) double_tap_window: Duration,
     pub(super) condition_game_mode: Option<GameModeCondition>,
     pub(super) condition_keyboard_layouts: Option<Vec<String>>,
@@ -114,6 +117,8 @@ pub(super) struct RuleExecution {
     /// Second press inside the double-tap window of a rule with a hold:
     /// a short press fires the double-tap, a long one the hold.
     pub(super) second_press: bool,
+    /// When the rule key was pressed (the event time, also for replays).
+    pub(super) pressed_at: Instant,
 }
 
 impl RuleEntry {

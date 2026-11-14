@@ -3502,3 +3502,18 @@ msgstr "Tecloid 傳送複製命令時顯示提示"
 
 msgid "Copied"
 msgstr "已複製"
+
+msgid "Enter a late tap from 0 to 5000 ms."
+msgstr "請輸入 0 到 5000 毫秒之間的延遲輕按。"
+
+msgid "Late tap, ms"
+msgstr "延遲輕按，毫秒"
+
+msgid "Holding activates the layer as usual. Released within this time with nothing pressed, clicked or scrolled meanwhile, the trigger still runs its tap. 0 turns it off. Empty uses twice the hold threshold: {} ms."
+msgstr "按住時照常啟用層。如果在此時間內放開，且期間沒有按鍵、點擊或捲動，觸發鍵仍會執行輕按動作。0 表示關閉。留空則使用按住門檻的兩倍：{} 毫秒。"
+
+msgid "Used for single-key triggers that activate a layer."
+msgstr "用於啟用層的單鍵觸發鍵。"
+
+msgid "Use twice the hold threshold: {} ms"
+msgstr "使用按住門檻的兩倍：{} 毫秒"

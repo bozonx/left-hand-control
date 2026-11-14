@@ -15,6 +15,7 @@ pub(super) fn bind(ui: &SettingsWindow) {
     let timing = ui.global::<Timing>();
     timing.set_tap_hold(range(timing::TAP_HOLD));
     timing.set_long_hold(range(timing::LONG_HOLD));
+    timing.set_retro_tap(range(timing::RETRO_TAP));
     timing.set_trigger_chord(range(timing::TRIGGER_CHORD));
     timing.set_macro_delay(range(timing::MACRO_DELAY));
     timing.set_pause(range(timing::PAUSE));

@@ -3835,3 +3835,18 @@ msgstr "Mostra un avviso quando Tecloid invia un comando di copia"
 
 msgid "Copied"
 msgstr "Copiato"
+
+msgid "Enter a late tap from 0 to 5000 ms."
+msgstr "Inserisci un tocco tardivo da 0 a 5000 ms."
+
+msgid "Late tap, ms"
+msgstr "Tocco tardivo, ms"
+
+msgid "Holding activates the layer as usual. Released within this time with nothing pressed, clicked or scrolled meanwhile, the trigger still runs its tap. 0 turns it off. Empty uses twice the hold threshold: {} ms."
+msgstr "Tenere premuto attiva il livello come al solito. Se rilasciato entro questo tempo senza premere, fare clic o scorrere nulla, l’attivatore esegue comunque il tocco. 0 lo disattiva. Vuoto usa il doppio della soglia di pressione prolungata: {} ms."
+
+msgid "Used for single-key triggers that activate a layer."
+msgstr "Usato per attivatori a tasto singolo che attivano un livello."
+
+msgid "Use twice the hold threshold: {} ms"
+msgstr "Usa il doppio della soglia di pressione prolungata: {} ms"

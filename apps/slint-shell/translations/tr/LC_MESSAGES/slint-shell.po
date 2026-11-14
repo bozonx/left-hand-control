@@ -3778,3 +3778,18 @@ msgstr "Tecloid bir kopyalama komutu gönderdiğinde ipucu göster"
 
 msgid "Copied"
 msgstr "Kopyalandı"
+
+msgid "Enter a late tap from 0 to 5000 ms."
+msgstr "0 ile 5000 ms arasında bir geç dokunma girin."
+
+msgid "Late tap, ms"
+msgstr "Geç dokunma, ms"
+
+msgid "Holding activates the layer as usual. Released within this time with nothing pressed, clicked or scrolled meanwhile, the trigger still runs its tap. 0 turns it off. Empty uses twice the hold threshold: {} ms."
+msgstr "Basılı tutmak katmanı her zamanki gibi etkinleştirir. Bu süre içinde başka bir şeye basılmadan, tıklanmadan veya kaydırılmadan bırakılırsa tetikleyici yine de dokunma eylemini çalıştırır. 0 kapatır. Boş, basılı tutma eşiğinin iki katını kullanır: {} ms."
+
+msgid "Used for single-key triggers that activate a layer."
+msgstr "Bir katmanı etkinleştiren tek tuşlu tetikleyiciler için kullanılır."
+
+msgid "Use twice the hold threshold: {} ms"
+msgstr "Basılı tutma eşiğinin iki katını kullan: {} ms"

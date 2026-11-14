@@ -386,3 +386,112 @@ fn text_chord_rolled_under_an_undecided_layer_key_is_still_the_chord() {
     );
     assert_eq!(trace, [Tap(KeyCode::KEY_ENTER, vec![]), Text("Ё".into())]);
 }
+
+fn retro_cfg(retro: Option<u64>) -> serde_json::Value {
+    let mut rule = serde_json::json!(
+        {"key": "CapsLock", "tapAction": "Ctrl+KeyV", "layerId": "nav", "holdTimeoutMs": 180}
+    );
+    if let Some(ms) = retro {
+        rule["retroTapMs"] = ms.into();
+    }
+    serde_json::json!({
+        "rules": [rule, {"key": "MetaLeft", "tapAction": "KeyZ", "holdAction": "ControlLeft"}],
+        "layerKeymaps": {"nav": {"keys": {"KeyH": "ArrowLeft"}}}
+    })
+}
+
+fn caps_held(ms: u64, retro: Option<u64>) -> Vec<TraceEvent> {
+    timeline(
+        retro_cfg(retro),
+        &[(KeyCode::KEY_CAPSLOCK, true, 0), (KeyCode::KEY_CAPSLOCK, false, ms)],
+        &[100, 190, 250, 350],
+    )
+}
+
+#[test]
+fn layer_hold_released_alone_within_twice_the_timeout_still_taps() {
+    let paste = [TraceEvent::Tap(KeyCode::KEY_V, vec![KeyCode::KEY_LEFTCTRL])];
+    assert_eq!(caps_held(120, None), paste);
+    assert_eq!(caps_held(237, None), paste);
+    assert_eq!(caps_held(360, None), paste);
+    assert_eq!(caps_held(361, None), []);
+}
+
+#[test]
+fn retro_tap_window_is_configurable_and_zero_turns_it_off() {
+    let paste = [TraceEvent::Tap(KeyCode::KEY_V, vec![KeyCode::KEY_LEFTCTRL])];
+    assert_eq!(caps_held(237, Some(0)), []);
+    assert_eq!(caps_held(120, Some(0)), paste);
+    assert_eq!(caps_held(900, Some(1000)), paste);
+    assert_eq!(caps_held(1001, Some(1000)), []);
+}
+
+#[test]
+fn layer_hold_used_by_any_key_does_not_tap_late() {
+    use TraceEvent::*;
+    // A key the layer maps, one it leaves out, and a click.
+    for key in [KeyCode::KEY_H, KeyCode::KEY_1, KeyCode::BTN_LEFT] {
+        let trace = timeline(
+            retro_cfg(None),
+            &[
+                (KeyCode::KEY_CAPSLOCK, true, 0),
+                (key, true, 200),
+                (key, false, 220),
+                (KeyCode::KEY_CAPSLOCK, false, 250),
+            ],
+            &[190],
+        );
+        assert!(
+            !trace.contains(&Tap(KeyCode::KEY_V, vec![KeyCode::KEY_LEFTCTRL])),
+            "{key:?}: {trace:?}"
+        );
+    }
+}
+
+#[test]
+fn scrolling_during_a_layer_hold_cancels_the_late_tap() {
+    let cfg: MapperConfig = serde_json::from_value(retro_cfg(None)).unwrap();
+    let mut engine = Engine::new(&cfg);
+    let start = Instant::now();
+    let mut out = Vec::new();
+    engine.handle_key_event(KeyCode::KEY_CAPSLOCK, true, start, &mut out);
+    engine.tick(start + Duration::from_millis(190), &mut out);
+    engine.note_activity(start + Duration::from_millis(200));
+    engine.handle_key_event(
+        KeyCode::KEY_CAPSLOCK,
+        false,
+        start + Duration::from_millis(250),
+        &mut out,
+    );
+    assert!(out.is_empty());
+}
+
+#[test]
+fn modifier_holds_never_tap_late() {
+    use TraceEvent::*;
+    let trace = timeline(
+        retro_cfg(None),
+        &[(KeyCode::KEY_LEFTMETA, true, 0), (KeyCode::KEY_LEFTMETA, false, 250)],
+        &[210],
+    );
+    assert_eq!(
+        trace,
+        [Press(KeyCode::KEY_LEFTCTRL, vec![]), Raw(KeyCode::KEY_LEFTCTRL, false)]
+    );
+}
+
+#[test]
+fn retro_tap_round_trips_through_the_keymap_file() {
+    use crate::config::keymap_file::{parse, serialize};
+    let file = serde_json::json!({
+        "version": 1,
+        "meta": {"name": "T"},
+        "rules": [{"key": "CapsLock", "tap": "Ctrl+KeyV",
+                   "hold": {"layer": "nav", "retroTapMs": 0}}]
+    })
+    .to_string();
+    let preset = parse(&file).unwrap().unwrap();
+    assert_eq!(preset.rules[0].retro_tap_ms, Some(0));
+    let again = parse(&serialize(&preset)).unwrap().unwrap();
+    assert_eq!(again.rules[0].retro_tap_ms, Some(0));
+}

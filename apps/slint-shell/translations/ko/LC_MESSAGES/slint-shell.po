@@ -3560,3 +3560,18 @@ msgstr "Tecloid가 복사 명령을 보낼 때 알림 표시"
 
 msgid "Copied"
 msgstr "복사됨"
+
+msgid "Enter a late tap from 0 to 5000 ms."
+msgstr "0~5000ms 사이의 늦은 탭을 입력하세요."
+
+msgid "Late tap, ms"
+msgstr "늦은 탭, ms"
+
+msgid "Holding activates the layer as usual. Released within this time with nothing pressed, clicked or scrolled meanwhile, the trigger still runs its tap. 0 turns it off. Empty uses twice the hold threshold: {} ms."
+msgstr "누르고 있으면 평소처럼 레이어가 켜집니다. 이 시간 안에 다른 키 입력, 클릭, 스크롤 없이 놓으면 트리거가 탭 동작을 실행합니다. 0이면 끕니다. 비워 두면 누름 임계값의 두 배를 사용합니다: {} ms."
+
+msgid "Used for single-key triggers that activate a layer."
+msgstr "레이어를 켜는 단일 키 트리거에 사용됩니다."
+
+msgid "Use twice the hold threshold: {} ms"
+msgstr "누름 임계값의 두 배 사용: {} ms"

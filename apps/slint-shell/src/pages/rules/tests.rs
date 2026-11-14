@@ -128,6 +128,7 @@ fn advanced_draft_validates_every_field_before_changing_the_rule() {
     let original = rule.clone();
     let mut draft = AdvancedDraft {
         hold_timeout: "250".into(),
+        retro_tap: String::new(),
         double_timeout: "300".into(),
         long_hold_timeout: "invalid".into(),
         hold: Some("Ctrl+KeyC".into()),
@@ -140,7 +141,12 @@ fn advanced_draft_validates_every_field_before_changing_the_rule() {
     assert_eq!(draft.apply(&mut rule), Err(Msg::ActionRequired));
     assert_eq!(rule, original);
     draft.hold = None;
+    draft.retro_tap = "5001".into();
+    assert_eq!(draft.apply(&mut rule), Err(Msg::RetroTapInvalid));
+    assert_eq!(rule, original);
+    draft.retro_tap = "0".into();
     draft.apply(&mut rule).unwrap();
+    assert_eq!(rule.retro_tap_ms, Some(0));
     assert_eq!(rule.hold_action, None);
     assert_eq!(rule.hold_timeout_ms, Some(250));
     assert_eq!(rule.double_tap_timeout_ms, Some(300));

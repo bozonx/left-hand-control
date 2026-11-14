@@ -84,6 +84,7 @@ ID Keymap библиотеки устроены иначе: `user:<имя фай
 | --- | --- |
 | `settings.timing.holdMs`, `doubleTapMs`; `rules[].hold.timeoutMs`, `doubleTap.timeoutMs` | 50–1000 |
 | `settings.timing.longHoldMs`; `rules[].longHold.timeoutMs` | 100–60000 |
+| `rules[].hold.retroTapMs` | 0–5000 |
 | `settings.timing.chordMs` | 10–500 |
 | `settings.timing.macroStepPauseMs`, `macroModifierDelayMs`; `macros[].stepPauseMs`, `modifierDelayMs` | 0–2000 |
 | `pause:<мс>` в шагах макроса | 1–10000 |
@@ -383,6 +384,7 @@ Id Keymap библиотеки имеют вид `user:<имя файла без
 | `layer` | слой, который действует, пока клавиша удерживается |
 | `action` | клавиша или сочетание, зажатые во время удержания (например `ControlLeft`). Нет поля — сама клавиша (или ничего, если задан `layer`), `null` — ничего |
 | `timeoutMs` | через сколько нажатие считается удержанием; по умолчанию `settings.timing.holdMs` |
+| `retroTapMs` | позднее нажатие для триггера из одной клавиши со слоем и без `action`: если отпустить его в пределах этого времени от нажатия и за это время не нажимать других клавиш, кнопок мыши и не прокручивать, срабатывает `tap`. Нет поля — удвоенный `timeoutMs`, `0` — выключено |
 
 ### Макросы и команды
 

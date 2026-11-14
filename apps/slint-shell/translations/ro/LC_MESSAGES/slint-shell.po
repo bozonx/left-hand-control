@@ -3812,3 +3812,18 @@ msgstr "Afișează un indiciu când Tecloid trimite o comandă de copiere"
 
 msgid "Copied"
 msgstr "Copiat"
+
+msgid "Enter a late tap from 0 to 5000 ms."
+msgstr "Introduceți o atingere întârziată între 0 și 5000 ms."
+
+msgid "Late tap, ms"
+msgstr "Atingere întârziată, ms"
+
+msgid "Holding activates the layer as usual. Released within this time with nothing pressed, clicked or scrolled meanwhile, the trigger still runs its tap. 0 turns it off. Empty uses twice the hold threshold: {} ms."
+msgstr "Ținerea apăsată activează stratul ca de obicei. Dacă declanșatorul este eliberat în acest interval fără să apăsați, să faceți clic sau să derulați ceva, se execută totuși atingerea. 0 o dezactivează. Gol folosește dublul pragului de ținere: {} ms."
+
+msgid "Used for single-key triggers that activate a layer."
+msgstr "Folosit pentru declanșatoare cu o singură tastă care activează un strat."
+
+msgid "Use twice the hold threshold: {} ms"
+msgstr "Folosește dublul pragului de ținere: {} ms"

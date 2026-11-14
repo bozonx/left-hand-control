@@ -38,6 +38,8 @@ pub const LONG_HOLD: MillisecondsRange = MillisecondsRange {
     min: 100,
     max: 60_000,
 };
+/// Late tap after a layer hold; 0 turns it off.
+pub const RETRO_TAP: MillisecondsRange = MillisecondsRange { min: 0, max: 5000 };
 pub const TRIGGER_CHORD: MillisecondsRange = MillisecondsRange { min: 10, max: 500 };
 pub const MACRO_DELAY: MillisecondsRange = MillisecondsRange { min: 0, max: 2000 };
 pub const PAUSE: MillisecondsRange = MillisecondsRange {
@@ -95,6 +97,7 @@ pub fn validate_keymap(keymap: &KeymapPreset) -> Result<(), String> {
             ("hold.timeoutMs", rule.hold_timeout_ms, TAP_HOLD),
             ("doubleTap.timeoutMs", rule.double_tap_timeout_ms, TAP_HOLD),
             ("longHold.timeoutMs", rule.long_hold_timeout_ms, LONG_HOLD),
+            ("hold.retroTapMs", rule.retro_tap_ms, RETRO_TAP),
         ] {
             if let Some(value) = value {
                 range.check(value, &format!("rules[{index}].{field}"))?;

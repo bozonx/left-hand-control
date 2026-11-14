@@ -357,6 +357,19 @@ impl Engine {
                 .map(|ms| Duration::from_millis(ms.max(1)))
                 .unwrap_or(default_double_tap);
 
+            // Only a pure layer hold may tap late: a held key or modifier
+            // already acted while it was down.
+            let retro_tap = (keys.len() == 1
+                && layer_id.is_some()
+                && matches!(hold, HoldOutputMode::Swallow)
+                && !matches!(tap, TapMode::Swallow)
+                && long_hold.is_none())
+            .then(|| {
+                r.retro_tap_ms
+                    .map(|ms| Duration::from_millis(ms.min(crate::config::timing::RETRO_TAP.max)))
+                    .unwrap_or(hold_timeout * 2)
+            })
+            .filter(|window| !window.is_zero());
             let entry = RuleEntry {
                 // A modifier that stays itself when held types capitals in
                 // rolls (Shift released just before the letter) only when
@@ -391,6 +404,7 @@ impl Engine {
                 } else {
                     hold_timeout
                 },
+                retro_tap,
                 double_tap_window,
                 condition_game_mode: r.condition_game_mode.clone(),
                 condition_keyboard_layouts: r.condition_keyboard_layouts.clone(),
@@ -449,6 +463,7 @@ impl Engine {
                 trigger_chord_timeout: Duration::from_millis(cfg.settings.trigger_chord_timeout_ms),
             },
             physical_down: HashSet::new(),
+            last_activity: None,
             last_typing_press: None,
             press_at: HashMap::new(),
             long_holds: HashMap::new(),

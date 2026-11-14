@@ -431,7 +431,20 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
                 }
                 DriverInput::Repeat(key) => engine.repeat(key, out_buf),
                 #[cfg(target_os = "linux")]
-                DriverInput::Pointer { event, .. } => {
+                DriverInput::Pointer { event, at } => {
+                    if event.iter().any(|ev| {
+                        ev.event_type() == evdev::EventType::RELATIVE
+                            && matches!(
+                                evdev::RelativeAxisCode(ev.code()),
+                                evdev::RelativeAxisCode::REL_WHEEL
+                                    | evdev::RelativeAxisCode::REL_HWHEEL
+                                    | evdev::RelativeAxisCode::REL_WHEEL_HI_RES
+                                    | evdev::RelativeAxisCode::REL_HWHEEL_HI_RES
+                            )
+                    }) {
+                        // Ctrl+scroll and the like: the held key was used.
+                        engine.note_activity(at);
+                    }
                     // Deliver earlier modifiers/buttons before pointer movement.
                     resolve_literals(effects, out_buf);
                     hold.gate(out_buf, arrived, effects.text_pending());
@@ -1556,6 +1569,7 @@ mod tests {
             long_hold_timeout_ms: None,
             hold_action: ActionSpec::Action("ControlLeft".into()),
             hold_timeout_ms: Some(10),
+            retro_tap_ms: None,
             tap_decision: None,
             double_tap_action: String::new(),
             double_tap_timeout_ms: None,

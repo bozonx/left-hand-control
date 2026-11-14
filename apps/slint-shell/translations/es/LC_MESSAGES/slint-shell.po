@@ -3770,3 +3770,18 @@ msgstr "Mostrar un aviso cuando Tecloid envíe una orden de copia"
 
 msgid "Copied"
 msgstr "Copiado"
+
+msgid "Enter a late tap from 0 to 5000 ms."
+msgstr "Introduce una pulsación tardía de 0 a 5000 ms."
+
+msgid "Late tap, ms"
+msgstr "Pulsación tardía, ms"
+
+msgid "Holding activates the layer as usual. Released within this time with nothing pressed, clicked or scrolled meanwhile, the trigger still runs its tap. 0 turns it off. Empty uses twice the hold threshold: {} ms."
+msgstr "Mantener activa la capa como siempre. Si se suelta dentro de este tiempo sin pulsar, hacer clic ni desplazar nada, el disparador ejecuta igualmente su pulsación. 0 lo desactiva. Vacío usa el doble del umbral de mantener: {} ms."
+
+msgid "Used for single-key triggers that activate a layer."
+msgstr "Se usa en disparadores de una tecla que activan una capa."
+
+msgid "Use twice the hold threshold: {} ms"
+msgstr "Usar el doble del umbral de mantener: {} ms"

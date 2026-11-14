@@ -88,6 +88,11 @@ pub struct KeyRule {
     pub double_tap_action: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hold_timeout_ms: Option<u64>,
+    /// Late tap window of a layer hold: released within it without any
+    /// other input, the hold still taps. `None` is twice the hold timeout,
+    /// `Some(0)` turns it off.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub retro_tap_ms: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tap_decision: Option<TapDecision>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -124,6 +129,7 @@ impl KeyRule {
             hold_action: Some(String::new()),
             double_tap_action: String::new(),
             hold_timeout_ms: None,
+            retro_tap_ms: None,
             tap_decision: None,
             double_tap_timeout_ms: None,
         }

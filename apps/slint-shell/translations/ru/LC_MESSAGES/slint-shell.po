@@ -3223,3 +3223,18 @@ msgstr "Показывать подсказку, когда Tecloid отправ
 
 msgid "Copied"
 msgstr "Скопировано"
+
+msgid "Enter a late tap from 0 to 5000 ms."
+msgstr "Введите позднее нажатие от 0 до 5000 мс."
+
+msgid "Late tap, ms"
+msgstr "Позднее нажатие, мс"
+
+msgid "Holding activates the layer as usual. Released within this time with nothing pressed, clicked or scrolled meanwhile, the trigger still runs its tap. 0 turns it off. Empty uses twice the hold threshold: {} ms."
+msgstr "Удержание включает слой как обычно. Если отпустить триггер в пределах этого времени и ничего не нажимать, не кликать и не прокручивать, всё равно сработает действие нажатия. 0 отключает. Пусто — удвоенный порог удержания: {} мс."
+
+msgid "Used for single-key triggers that activate a layer."
+msgstr "Используется для одноклавишных триггеров, включающих слой."
+
+msgid "Use twice the hold threshold: {} ms"
+msgstr "Использовать удвоенный порог удержания: {} мс"

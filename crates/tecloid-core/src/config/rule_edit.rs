@@ -10,6 +10,7 @@ use super::{
 pub enum RuleOptionsError {
     Timeout,
     LongHold,
+    RetroTap,
     HeldKey,
 }
 
@@ -18,6 +19,7 @@ pub struct RuleOptions {
     pub hold_timeout_ms: Option<u64>,
     pub double_tap_timeout_ms: Option<u64>,
     pub long_hold_timeout_ms: Option<u64>,
+    pub retro_tap_ms: Option<u64>,
     pub hold_action: Option<String>,
     pub tap_decision: Option<TapDecision>,
 }
@@ -38,6 +40,12 @@ impl RuleOptions {
             return Err(RuleOptionsError::LongHold);
         }
         if self
+            .retro_tap_ms
+            .is_some_and(|ms| !timing::RETRO_TAP.contains(ms))
+        {
+            return Err(RuleOptionsError::RetroTap);
+        }
+        if self
             .hold_action
             .as_deref()
             .is_some_and(|key| !key.is_empty() && !actions::valid_held_key(key))
@@ -47,6 +55,7 @@ impl RuleOptions {
         rule.hold_timeout_ms = self.hold_timeout_ms;
         rule.double_tap_timeout_ms = self.double_tap_timeout_ms;
         rule.long_hold_timeout_ms = self.long_hold_timeout_ms;
+        rule.retro_tap_ms = self.retro_tap_ms;
         rule.tap_decision = self.tap_decision;
         if rule.hold_behavior() != HoldBehavior::Action {
             rule.hold_action = self.hold_action;
@@ -78,6 +87,7 @@ mod tests {
             hold_timeout_ms: Some(250),
             double_tap_timeout_ms: Some(300),
             long_hold_timeout_ms: Some(1500),
+            retro_tap_ms: Some(0),
             hold_action: Some("Ctrl+KeyC".into()),
             tap_decision: Some(TapDecision::HoldOnOtherKeyPress),
         }
@@ -110,6 +120,13 @@ mod tests {
             ),
             (
                 RuleOptions {
+                    retro_tap_ms: Some(5001),
+                    ..options()
+                },
+                RuleOptionsError::RetroTap,
+            ),
+            (
+                RuleOptions {
                     hold_action: Some("cmd:bad".into()),
                     ..options()
                 },
@@ -136,6 +153,7 @@ mod tests {
             hold_timeout_ms: None,
             double_tap_timeout_ms: None,
             long_hold_timeout_ms: None,
+            retro_tap_ms: None,
             hold_action: None,
             tap_decision: None,
         }

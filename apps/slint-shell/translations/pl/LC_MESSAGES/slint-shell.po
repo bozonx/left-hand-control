@@ -3813,3 +3813,18 @@ msgstr "Pokaż wskazówkę, gdy Tecloid wysyła polecenie kopiowania"
 
 msgid "Copied"
 msgstr "Skopiowano"
+
+msgid "Enter a late tap from 0 to 5000 ms."
+msgstr "Wpisz późne dotknięcie od 0 do 5000 ms."
+
+msgid "Late tap, ms"
+msgstr "Późne dotknięcie, ms"
+
+msgid "Holding activates the layer as usual. Released within this time with nothing pressed, clicked or scrolled meanwhile, the trigger still runs its tap. 0 turns it off. Empty uses twice the hold threshold: {} ms."
+msgstr "Przytrzymanie włącza warstwę jak zwykle. Jeśli wyzwalacz zostanie puszczony w tym czasie bez naciskania, klikania ani przewijania, i tak wykona akcję dotknięcia. 0 wyłącza. Puste oznacza dwukrotność progu przytrzymania: {} ms."
+
+msgid "Used for single-key triggers that activate a layer."
+msgstr "Używane dla wyzwalaczy jednoklawiszowych włączających warstwę."
+
+msgid "Use twice the hold threshold: {} ms"
+msgstr "Użyj dwukrotności progu przytrzymania: {} ms"

@@ -3781,3 +3781,18 @@ msgstr "Показувати підказку, коли Tecloid надсилає
 
 msgid "Copied"
 msgstr "Скопійовано"
+
+msgid "Enter a late tap from 0 to 5000 ms."
+msgstr "Введіть пізнє натискання від 0 до 5000 мс."
+
+msgid "Late tap, ms"
+msgstr "Пізнє натискання, мс"
+
+msgid "Holding activates the layer as usual. Released within this time with nothing pressed, clicked or scrolled meanwhile, the trigger still runs its tap. 0 turns it off. Empty uses twice the hold threshold: {} ms."
+msgstr "Утримання вмикає шар як зазвичай. Якщо відпустити тригер у межах цього часу, нічого не натискаючи, не клацаючи й не прокручуючи, усе одно виконається дія натискання. 0 вимикає. Порожньо — подвоєний поріг утримання: {} мс."
+
+msgid "Used for single-key triggers that activate a layer."
+msgstr "Використовується для однокнопкових тригерів, що вмикають шар."
+
+msgid "Use twice the hold threshold: {} ms"
+msgstr "Використати подвоєний поріг утримання: {} мс"

@@ -572,6 +572,7 @@ fn empty_macro_does_not_crash() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Swallow,
         hold_timeout_ms: None,
+        retro_tap_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,

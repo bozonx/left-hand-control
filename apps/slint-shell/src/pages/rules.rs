@@ -85,11 +85,26 @@ fn optional_long_hold(value: &str) -> Result<Option<u64>, Msg> {
     }
 }
 
+/// Empty uses twice the hold threshold; 0 turns the late tap off.
+fn parse_retro_tap(value: &str) -> Result<Option<u64>, Msg> {
+    let value = value.trim();
+    if value.is_empty() {
+        return Ok(None);
+    }
+    value
+        .parse::<u64>()
+        .ok()
+        .filter(|value| tecloid_core::config::timing::RETRO_TAP.contains(*value))
+        .map(Some)
+        .ok_or(Msg::RetroTapInvalid)
+}
+
 /// Editable text stays separate from the saved rule until all fields validate.
 struct AdvancedDraft {
     hold_timeout: String,
     double_timeout: String,
     long_hold_timeout: String,
+    retro_tap: String,
     hold: Option<String>,
     detection: HoldDetection,
 }
@@ -99,10 +114,12 @@ impl AdvancedDraft {
         let hold = parse_timeout(&self.hold_timeout)?;
         let double = parse_timeout(&self.double_timeout)?;
         let long_hold = optional_long_hold(&self.long_hold_timeout)?;
+        let retro_tap = parse_retro_tap(&self.retro_tap)?;
         RuleOptions {
             hold_timeout_ms: hold,
             double_tap_timeout_ms: double,
             long_hold_timeout_ms: long_hold,
+            retro_tap_ms: retro_tap,
             hold_action: self.hold.clone(),
             tap_decision: match self.detection {
                 HoldDetection::Release => Some(TapDecision::PermissiveHold),
@@ -114,6 +131,7 @@ impl AdvancedDraft {
         .map_err(|error| match error {
             RuleOptionsError::Timeout => Msg::TimeoutInvalid,
             RuleOptionsError::LongHold => Msg::LongHoldInvalid,
+            RuleOptionsError::RetroTap => Msg::RetroTapInvalid,
             RuleOptionsError::HeldKey => Msg::ActionRequired,
         })?;
         Ok(())
@@ -329,6 +347,8 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     editor.set_double_timeout(timeout_text(rule.double_tap_timeout_ms).into());
     editor.set_original_hold_timeout(timeout_text(rule.hold_timeout_ms).into());
     editor.set_original_double_timeout(timeout_text(rule.double_tap_timeout_ms).into());
+    editor.set_retro_tap(timeout_text(rule.retro_tap_ms).into());
+    editor.set_original_retro_tap(timeout_text(rule.retro_tap_ms).into());
 }
 
 /// Status after a saved change: mapper problems first, then rule warnings.
@@ -801,6 +821,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             hold_timeout: editor.get_hold_timeout().to_string(),
             double_timeout: editor.get_double_timeout().to_string(),
             long_hold_timeout: editor.get_long_hold_timeout().to_string(),
+            retro_tap: editor.get_retro_tap().to_string(),
             hold: (!editor.get_swallow_hold()).then(|| editor.get_hold().to_string()),
             detection: editor.get_hold_detection(),
         };

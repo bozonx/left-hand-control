@@ -3848,3 +3848,18 @@ msgstr "Hinweis anzeigen, wenn Tecloid einen Kopierbefehl sendet"
 
 msgid "Copied"
 msgstr "Kopiert"
+
+msgid "Enter a late tap from 0 to 5000 ms."
+msgstr "Geben Sie einen späten Tipp von 0 bis 5000 ms ein."
+
+msgid "Late tap, ms"
+msgstr "Später Tipp, ms"
+
+msgid "Holding activates the layer as usual. Released within this time with nothing pressed, clicked or scrolled meanwhile, the trigger still runs its tap. 0 turns it off. Empty uses twice the hold threshold: {} ms."
+msgstr "Halten aktiviert die Ebene wie gewohnt. Wird der Auslöser innerhalb dieser Zeit losgelassen, ohne dass etwas gedrückt, geklickt oder gescrollt wurde, wird trotzdem die Tipp-Aktion ausgeführt. 0 schaltet es aus. Leer verwendet die doppelte Halteschwelle: {} ms."
+
+msgid "Used for single-key triggers that activate a layer."
+msgstr "Für Ein-Tasten-Auslöser, die eine Ebene aktivieren."
+
+msgid "Use twice the hold threshold: {} ms"
+msgstr "Doppelte Halteschwelle verwenden: {} ms"

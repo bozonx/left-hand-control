@@ -92,6 +92,9 @@ pub struct Engine {
     layers: LayerStack,
     virt: VirtualKeys,
     runner: MacroRunner,
+    /// Time of the latest physical press, click or scroll; a layer hold
+    /// with any input after its own press is not a late tap.
+    last_activity: Option<Instant>,
     /// Where rule conditions read the observed system state from; the live
     /// watcher cache by default, a fixed snapshot in tests.
     context: ContextSource,
@@ -290,6 +293,7 @@ impl Engine {
                 return;
             }
             self.press_at.insert(key, now);
+            self.note_activity(now);
             if !self.layers.active.is_empty() {
                 self.layers.used = true;
             }
@@ -312,6 +316,12 @@ impl Engine {
             return;
         }
         self.handle_event(key, down, now, out);
+    }
+
+    /// Record input that is not a key event of its own (a scroll), so a held
+    /// layer key does not tap late after it.
+    pub fn note_activity(&mut self, at: Instant) {
+        self.last_activity = Some(self.last_activity.map_or(at, |last| last.max(at)));
     }
 
     /// Auto-repeat of a held physical key, for backends whose OS does not
@@ -592,6 +602,9 @@ impl Engine {
                 RulePhase::HoldActive => {
                     self.pending.remove(&key);
                     self.release_hold_with(&pending.rule, key, out);
+                    if self.retro_taps(&pending, now) {
+                        self.fire_tap(key, &pending.rule.tap, now, out);
+                    }
                 }
                 RulePhase::WaitingDecision { .. } if pending.second_press => {
                     // Short second press of a tap-then-hold rule.
@@ -741,6 +754,19 @@ impl Engine {
         });
     }
 
+    /// True when a released layer hold still counts as a tap: released
+    /// within its late-tap window and nothing else was pressed, clicked or
+    /// scrolled since its own press.
+    fn retro_taps(&self, pending: &RuleExecution, now: Instant) -> bool {
+        !pending.second_press
+            && pending.rule.retro_tap.is_some_and(|window| {
+                now.saturating_duration_since(pending.pressed_at) <= window
+            })
+            && self
+                .last_activity
+                .is_none_or(|last| last <= pending.pressed_at)
+    }
+
     /// True while an event of `key` at or before `deadline` still waits in
     /// the combo or decision buffer. The key's timer must not fire before
     /// that event replays: a buffered release or second press decides it.
@@ -790,6 +816,7 @@ impl Engine {
                     rule: rule.clone(),
                     phase: RulePhase::HoldActive,
                     second_press: false,
+                    pressed_at: now,
                 },
             );
             self.commit_hold_with(&rule, key, out);
@@ -801,6 +828,7 @@ impl Engine {
                     rule,
                     phase: RulePhase::WaitingDecision { deadline },
                     second_press: false,
+                    pressed_at: now,
                 },
             );
         }

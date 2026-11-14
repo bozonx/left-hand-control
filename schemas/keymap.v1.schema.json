@@ -58,6 +58,13 @@
             "null"
           ]
         },
+        "retroTapMs": {
+          "description": "Layer holds only: released within this many milliseconds without any\nother input, the hold still fires the tap. Missing: twice the hold\ntimeout; 0: off.",
+          "format": "uint64",
+          "maximum": 5000,
+          "minimum": 0,
+          "type": "integer"
+        },
         "timeoutMs": {
           "format": "uint64",
           "maximum": 1000,

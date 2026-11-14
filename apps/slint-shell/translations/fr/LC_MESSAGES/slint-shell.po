@@ -3857,3 +3857,18 @@ msgstr "Afficher une indication lorsque Tecloid envoie une commande de copie"
 
 msgid "Copied"
 msgstr "Copié"
+
+msgid "Enter a late tap from 0 to 5000 ms."
+msgstr "Saisissez un appui tardif de 0 à 5000 ms."
+
+msgid "Late tap, ms"
+msgstr "Appui tardif, ms"
+
+msgid "Holding activates the layer as usual. Released within this time with nothing pressed, clicked or scrolled meanwhile, the trigger still runs its tap. 0 turns it off. Empty uses twice the hold threshold: {} ms."
+msgstr "Le maintien active la couche comme d’habitude. Relâché dans ce délai sans autre touche, clic ni défilement, le déclencheur exécute quand même son action d’appui. 0 désactive. Vide utilise le double du seuil de maintien : {} ms."
+
+msgid "Used for single-key triggers that activate a layer."
+msgstr "Utilisé pour les déclencheurs à une touche qui activent une couche."
+
+msgid "Use twice the hold threshold: {} ms"
+msgstr "Utiliser le double du seuil de maintien : {} ms"

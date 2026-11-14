@@ -577,6 +577,7 @@ fn chord_release_keeps_mod_held_as_main_key() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         hold_timeout_ms: None,
+        retro_tap_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,

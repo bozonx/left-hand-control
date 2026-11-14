@@ -3764,3 +3764,18 @@ msgstr "მინიშნების ჩვენება, როცა Teclo
 
 msgid "Copied"
 msgstr "კოპირებულია"
+
+msgid "Enter a late tap from 0 to 5000 ms."
+msgstr "შეიყვანეთ დაგვიანებული დაჭერა 0-დან 5000 მწმ-მდე."
+
+msgid "Late tap, ms"
+msgstr "დაგვიანებული დაჭერა, მწმ"
+
+msgid "Holding activates the layer as usual. Released within this time with nothing pressed, clicked or scrolled meanwhile, the trigger still runs its tap. 0 turns it off. Empty uses twice the hold threshold: {} ms."
+msgstr "დაჭერით დაყოვნება ჩვეულებრივ რთავს ფენას. თუ ამ დროში გაუშვებთ ისე, რომ არაფერს დააჭერთ, არ დააწკაპუნებთ და არ გადაახვევთ, ტრიგერი მაინც შეასრულებს დაჭერის მოქმედებას. 0 გამორთავს. ცარიელი იყენებს დაყოვნების ზღვრის ორმაგ მნიშვნელობას: {} მწმ."
+
+msgid "Used for single-key triggers that activate a layer."
+msgstr "გამოიყენება ერთკლავიშიანი ტრიგერებისთვის, რომლებიც ფენას რთავენ."
+
+msgid "Use twice the hold threshold: {} ms"
+msgstr "დაყოვნების ზღვრის ორმაგის გამოყენება: {} მწმ"

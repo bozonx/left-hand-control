@@ -58,7 +58,11 @@ export global RulesEditor {
     in property <bool> original-swallow-hold;
     in-out property <string> original-hold-timeout;
     in-out property <string> original-double-timeout;
-    out property <bool> advanced-dirty: hold-detection != original-hold-detection || long-hold-timeout != original-long-hold-timeout || hold != original-hold || swallow-hold != original-swallow-hold || enabled != original-enabled || hold-timeout != original-hold-timeout || double-timeout != original-double-timeout;
+    in-out property <string> retro-tap;
+    in-out property <string> original-retro-tap;
+    /// Late-tap window used when the field is empty: twice the hold threshold.
+    out property <int> default-retro-tap: Math.round((hold-timeout != "" ? hold-timeout.to-float() : default-hold-timeout.to-float()) * 2);
+    out property <bool> advanced-dirty: retro-tap != original-retro-tap || hold-detection != original-hold-detection || long-hold-timeout != original-long-hold-timeout || hold != original-hold || swallow-hold != original-swallow-hold || enabled != original-enabled || hold-timeout != original-hold-timeout || double-timeout != original-double-timeout;
     in-out property <bool> enabled: true;
     in-out property <bool> original-enabled: true;
     in-out property <bool> swallow-tap;
@@ -457,6 +461,16 @@ export component RuleDialogOverlay inherits FocusScope {
                     reset-tooltip: @tr("Use the default from Settings: {} ms", RulesEditor.default-hold-timeout);
                     reset => { RulesEditor.hold-timeout = ""; }
                     HorizontalLayout { alignment: start; NumericInput { description: hold-form.info + (hold-form.active ? "" : "\n" + hold-form.inactive-reason); enabled: hold-form.active; text <=> RulesEditor.hold-timeout; placeholder-text: RulesEditor.default-hold-timeout; label: hold-form.label; minimum: Timing.tap-hold.minimum; maximum: Timing.tap-hold.maximum; } }
+                }
+                retro-form := ResettableField {
+                    label: @tr("Late tap, ms");
+                    info: @tr("Holding activates the layer as usual. Released within this time with nothing pressed, clicked or scrolled meanwhile, the trigger still runs its tap. 0 turns it off. Empty uses twice the hold threshold: {} ms.", RulesEditor.default-retro-tap);
+                    active: !RulesEditor.is-chord && RulesEditor.hold-mode == HoldBehavior.layer;
+                    inactive-reason: @tr("Used for single-key triggers that activate a layer.");
+                    modified: RulesEditor.retro-tap != "";
+                    reset-tooltip: @tr("Use twice the hold threshold: {} ms", RulesEditor.default-retro-tap);
+                    reset => { RulesEditor.retro-tap = ""; }
+                    HorizontalLayout { alignment: start; NumericInput { description: retro-form.info + (retro-form.active ? "" : "\n" + retro-form.inactive-reason); enabled: retro-form.active; text <=> RulesEditor.retro-tap; placeholder-text: RulesEditor.default-retro-tap; label: retro-form.label; minimum: Timing.retro-tap.minimum; maximum: Timing.retro-tap.maximum; } }
                 }
                 long-form := ResettableField {
                     visible: AppState.in-development || RulesEditor.hold-mode == HoldBehavior.action;

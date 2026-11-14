@@ -3865,3 +3865,18 @@ msgstr "Εμφάνιση υπόδειξης όταν το Tecloid στέλνει
 
 msgid "Copied"
 msgstr "Αντιγράφηκε"
+
+msgid "Enter a late tap from 0 to 5000 ms."
+msgstr "Εισαγάγετε καθυστερημένο πάτημα από 0 έως 5000 ms."
+
+msgid "Late tap, ms"
+msgstr "Καθυστερημένο πάτημα, ms"
+
+msgid "Holding activates the layer as usual. Released within this time with nothing pressed, clicked or scrolled meanwhile, the trigger still runs its tap. 0 turns it off. Empty uses twice the hold threshold: {} ms."
+msgstr "Το κράτημα ενεργοποιεί το επίπεδο ως συνήθως. Αν ο ενεργοποιητής αφεθεί μέσα σε αυτόν τον χρόνο χωρίς να πατηθεί, να γίνει κλικ ή κύλιση σε κάτι, εκτελείται παρ’ όλα αυτά το πάτημα. Το 0 το απενεργοποιεί. Κενό χρησιμοποιεί το διπλάσιο του ορίου κρατήματος: {} ms."
+
+msgid "Used for single-key triggers that activate a layer."
+msgstr "Χρησιμοποιείται για ενεργοποιητές ενός πλήκτρου που ενεργοποιούν επίπεδο."
+
+msgid "Use twice the hold threshold: {} ms"
+msgstr "Χρήση του διπλάσιου του ορίου κρατήματος: {} ms"

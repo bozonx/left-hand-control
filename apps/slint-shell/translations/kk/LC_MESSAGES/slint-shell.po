@@ -3782,3 +3782,18 @@ msgstr "Tecloid көшіру пәрменін жібергенде кеңес к
 
 msgid "Copied"
 msgstr "Көшірілді"
+
+msgid "Enter a late tap from 0 to 5000 ms."
+msgstr "0-ден 5000 мс-қа дейінгі кеш басуды енгізіңіз."
+
+msgid "Late tap, ms"
+msgstr "Кеш басу, мс"
+
+msgid "Holding activates the layer as usual. Released within this time with nothing pressed, clicked or scrolled meanwhile, the trigger still runs its tap. 0 turns it off. Empty uses twice the hold threshold: {} ms."
+msgstr "Ұстап тұру қабатты әдеттегідей қосады. Осы уақыт ішінде ештеңе баспай, шертпей және айналдырмай жіберсеңіз, триггер бәрібір басу әрекетін орындайды. 0 өшіреді. Бос болса, ұстау шегінің екі еселенген мәні: {} мс."
+
+msgid "Used for single-key triggers that activate a layer."
+msgstr "Қабатты қосатын бір пернелі триггерлер үшін қолданылады."
+
+msgid "Use twice the hold threshold: {} ms"
+msgstr "Ұстау шегінің екі еселенген мәнін қолдану: {} мс"

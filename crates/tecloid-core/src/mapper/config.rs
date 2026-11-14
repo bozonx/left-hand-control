@@ -129,6 +129,8 @@ pub struct Rule {
     #[serde(default)]
     pub hold_timeout_ms: Option<u64>,
     #[serde(default)]
+    pub retro_tap_ms: Option<u64>,
+    #[serde(default)]
     pub tap_decision: Option<TapDecision>,
     #[serde(default)]
     pub double_tap_action: String,
@@ -222,6 +224,7 @@ impl TryFrom<&crate::config::model::ResolvedAppConfig> for MapperConfig {
                     long_hold_action: rule.long_hold_action.clone(),
                     long_hold_timeout_ms: rule.long_hold_timeout_ms,
                     hold_timeout_ms: rule.hold_timeout_ms,
+                    retro_tap_ms: rule.retro_tap_ms,
                     tap_decision: rule.tap_decision,
                     double_tap_action: rule.double_tap_action.clone(),
                     double_tap_timeout_ms: rule.double_tap_timeout_ms,
